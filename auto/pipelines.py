@@ -6,13 +6,17 @@
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 import json
-import time
-from json import JSONDecodeError
-
 import pika
 import datetime
 
-from auto.settings import URL, TASK_QUEUE, RESULT_QUEUE
+from auto.settings import (
+    URL,
+    EXCHANGE,
+    TASK_QUEUE,
+    RESULT_QUEUE,
+    ROUTING_KEY_TO_TASK_QUEUE,
+    ROUTING_KEY_TO_RESULT_QUEUE
+)
 
 DEBUG = True
 
@@ -41,7 +45,7 @@ class AutoPipeline(object):
 
             try:
                 urls_to_scrap = json.loads(body)
-            except JSONDecodeError as error:
+            except json.JSONDecodeError as error:
                 raise RuntimeError(error)
 
             print("Urls to scrap: {}".format(urls_to_scrap))
@@ -49,10 +53,11 @@ class AutoPipeline(object):
             spider.start_urls = urls_to_scrap
 
         channel = connection.channel()
+        channel.exchange_declare(exchange=EXCHANGE, exchange_type="direct")
         channel.queue_declare(queue=TASK_QUEUE)
-        channel.basic_consume(TASK_QUEUE, on_message)
+        channel.queue_bind(exchange=EXCHANGE, queue=TASK_QUEUE, routing_key=ROUTING_KEY_TO_TASK_QUEUE)
+        channel.basic_consume(queue=TASK_QUEUE, on_message_callback=on_message)
         channel.start_consuming()
-        # time.sleep(1)
 
         if DEBUG: print("Start scrapping")
 
@@ -70,17 +75,17 @@ class AutoPipeline(object):
 
         connection = pika.BlockingConnection(params)
         channel = connection.channel()
-        channel.queue_declare(queue=RESULT_QUEUE)
+        channel.exchange_declare(exchange=EXCHANGE, exchange_type="direct")
 
         if not self.scrapped_items:
             self.scrapped_items.append(str(datetime.datetime.now()))
 
-        result = json.dumps(self.scrapped_items, indent=4, separators=(',', ': '), ensure_ascii=False)
+        body = json.dumps(self.scrapped_items, indent=4, separators=(',', ': '), ensure_ascii=False)
 
         channel.basic_publish(
-            exchange='',
-            routing_key=RESULT_QUEUE,
-            body=result
+            exchange=EXCHANGE,
+            routing_key=ROUTING_KEY_TO_RESULT_QUEUE,
+            body=body
         )
 
         if DEBUG: print("Results: {}".format(self.scrapped_items))

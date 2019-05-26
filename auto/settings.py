@@ -98,8 +98,14 @@ LOG_LEVEL = 'ERROR'
 
 # PIKA SETTINGS
 URL = "amqp://aytzrnsk:UBRrZHaH0qwS8l7dOiE3cM1ncK8LNdzn@bulldog.rmq.cloudamqp.com/aytzrnsk"
-TASK_QUEUE = "task_queue"
-RESULT_QUEUE = "result_queue"
+
+EXCHANGE = "main_exchange"
+
+TASK_QUEUE = "tasks"
+ROUTING_KEY_TO_TASK_QUEUE = "tasks"
+
+RESULT_QUEUE = "results"
+ROUTING_KEY_TO_RESULT_QUEUE = "results"
 
 # SCRAPPY SETTINGS
 SPIDER_NAME = "auto"
