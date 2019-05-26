@@ -1,4 +1,4 @@
-Настройки: settings.py file.
+Настройки: settings.py
 
 # PIKA SETTINGS
 URL = "amqp://aytzrnsk:UBRrZHaH0qwS8l7dOiE3cM1ncK8LNdzn@bulldog.rmq.cloudamqp.com/aytzrnsk"
